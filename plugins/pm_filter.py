@@ -33,7 +33,7 @@ BATCH_FILES = {}
 SPELL_CHECK = {}
 
 
-@Client.on_message(filters.group & filters.text & filters.incoming)    # & ~filters.edited
+@Client.on_message(filters.group & filters.text & filters.incoming)  # & ~filters.edited
 async def give_filter(client, message):
     group_id = message.chat.id
     chat_type = message.sender_chat.type if message.sender_chat else message.chat.type
@@ -110,7 +110,7 @@ async def give_filter(client, message):
         await auto_filter(client, message)
 
 
-@Client.on_edited_message(filters.group & filters.text & filters.incoming)    # & filters.edited
+@Client.on_edited_message(filters.group & filters.text & filters.incoming)  # & filters.edited
 async def give_filter_edited(client, message):
     group_id = message.chat.id
     chat_type = message.sender_chat.type if message.sender_chat else message.chat.type
@@ -176,6 +176,203 @@ async def give_filter_edited(client, message):
         await auto_filter(client, message)
 
 
+@Client.on_callback_query(filters.regex(r"^select"))
+async def select_files(bot, query):
+    ident, req, key, offset = query.data.split("_")
+    ad_user = query.from_user.id
+    if int(ad_user) in ADMINS:
+        pass
+    elif int(req) not in [query.from_user.id, 0]:
+        return await query.answer(
+            "കാര്യമൊക്കെ കൊള്ളാം, പക്ഷേ, ഇത്‌ നിങ്ങളുടേതല്ല.;\n"
+            "Nice Try! But, This Was Not Your Request, Request Yourself;",
+            show_alert=True)
+
+    if SELECT.get(int(req)):
+        del SELECT[int(req)]
+
+    if FILES.get(int(req)):
+        del FILES[int(req)]
+
+    SELECT[int(req)] = "ACTIVE"
+    try:
+        offset = int(offset)
+    except:
+        offset = 0
+    search = BUTTONS.get(key)
+    if not search:
+        await query.answer("You Are Using One Of My Old Messages, Please Send The Request Again.", show_alert=True)
+        return
+
+    i = 3
+    lines = []
+    sublines = []
+    btn = []
+    btn1 = []
+    try:
+        while True:
+            j = 0
+            lines = query.message.reply_markup.inline_keyboard[i]
+            if len(lines) == 1:
+                fs = json.loads(str(lines[0]))
+                if fs['text'] not in ["De-Select", "Select", "Send"]:
+                    btn.append([InlineKeyboardButton(text=fs['text'], callback_data=fs['callback_data'])])
+            else:
+                while True:
+                    sublines = lines[j]
+                    fs1 = json.loads(str(sublines))
+                    if fs1['text'] not in ["De-Select", "Select", "Send"]:
+                        btn1.append([fs1['text'], fs1['callback_data'], True])
+
+                    j = j + 1
+                    sublines = []
+                    if j > len(lines) - 1:
+                        keyboard = build_keyboard(btn1)
+                        btn.insert(i, keyboard[0])
+                        btn1 = []
+                        break
+            i = i + 1
+            lines = []
+            if i > len(query.message.reply_markup.inline_keyboard) - 1:
+                break
+
+    except Exception as e:
+        print(str(e))
+
+    if SELECT.get(int(req)) == "ACTIVE":
+        btn.append(
+            [InlineKeyboardButton(text=f"De-Select", callback_data=f"deselect_{req}_{key}_{offset}"),
+             InlineKeyboardButton(text="Send", callback_data=f"send_{req}_{key}_{offset}")]
+        )
+    else:
+        btn.append(
+            [InlineKeyboardButton(text="Select", callback_data=f"select_{req}_{key}_{offset}")]
+        )
+
+    btn.insert(0, [
+        InlineKeyboardButton("🧲 Tᴏʀʀᴇɴᴛ Gʀᴏᴜᴘ", url="https://t.me/UFSLeechPublic")
+    ])
+    btn.insert(0, [
+        InlineKeyboardButton("ᴘᴍ ᴍᴇ", url="https://t.me/UFSChatBot"),
+        InlineKeyboardButton("⚜ Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs ⚜", url="https://t.me/+uuLR9YwyRjg0ODQ0")
+    ])
+
+    btn.insert(0, [
+        InlineKeyboardButton("🔄 Nᴇᴡ Uᴘᴅᴀᴛᴇs", url="https://t.me/UFSFilmUpdate")
+    ])
+
+    await query.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(btn))
+
+
+@Client.on_callback_query(filters.regex(r"^deselect"))
+async def deselect_all(bot, query):
+    ident, req, key, offset = query.data.split("_")
+    ad_user = query.from_user.id
+    if int(ad_user) in ADMINS:
+        pass
+    elif int(req) not in [query.from_user.id, 0]:
+        return await query.answer(
+            "കാര്യമൊക്കെ കൊള്ളാം, പക്ഷേ, ഇത്‌ നിങ്ങളുടേതല്ല.;\n"
+            "Nice Try! But, This Was Not Your Request, Request Yourself;",
+            show_alert=True)
+
+    if SELECT.get(int(req)):
+        del SELECT[int(req)]
+
+    if FILES.get(int(req)):
+        del FILES[int(req)]
+
+    SELECT[int(req)] = "DE-ACTIVE"
+    await auto_filter(bot, query.message.reply_to_message, cb=query)
+
+
+@Client.on_callback_query(filters.regex(r"^send"))
+async def send_files(bot, query):
+    ident, req, key, offset = query.data.split("_")
+    ad_user = query.from_user.id
+
+    settings = await sett_db.get_settings(str(query.message.chat.id))
+
+    if settings is not None:
+        SINGLE_BUTTON = settings["button"]
+        SPELL_CHECK_REPLY = settings["spell_check"]
+        P_TTI_SHOW_OFF = settings["botpm"]
+        IMDB = settings["imdb"]
+
+    if FILE_PROTECT.get(query.from_user.id):
+        del FILE_PROTECT[query.from_user.id]
+    FILE_PROTECT[query.from_user.id] = str(query.message.chat.id)
+    if int(ad_user) in ADMINS:
+        pass
+    elif int(ad_user) in ADMINS:
+        pass
+    elif int(req) not in [query.from_user.id, 0]:
+        return await query.answer(
+            "കാര്യമൊക്കെ കൊള്ളാം, പക്ഷേ, ഇത്‌ നിങ്ങളുടേതല്ല.;\n"
+            "Nice Try! But, This Was Not Your Request, Request Yourself;",
+            show_alert=True)
+
+    for file_id in FILES[int(req)]:
+        files_ = await get_file_details(file_id)
+
+        if not files_:
+            return await query.answer('No such file exist.')
+        files = files_[0]
+        title = files.file_name
+        size = get_size(files.file_size)
+        f_caption = files.caption
+        if CUSTOM_FILE_CAPTION:
+            try:
+                f_caption = CUSTOM_FILE_CAPTION.format(file_name=title, file_size=size, file_caption=f_caption)
+            except Exception as e:
+                logger.exception(e)
+            f_caption = f_caption
+        if f_caption is None:
+            f_caption = f"{files.file_name}"
+
+        f_sub_caption = f"<code>💾 Size: {size}</code>\n\n🌟༺ ──•◈•─ ─•◈•──༻🌟\n<b>➧ പുതിയ സിനിമകൾ / വെബ്‌ സീരീസ് " \
+                        f"വേണോ? എന്നാൽ പെട്ടെന്ന് ഗ്രൂപ്പിൽ ജോയിൻ ആയിക്കോ\n\n🔊 Gʀᴏᴜᴘ: " \
+                        f"@UniversalFilmStudio \n🔊 Gʀᴏᴜᴘ: @UniversalFilmStudioo \n🔊 " \
+                        f"Cʜᴀɴɴᴇʟ: <a href='https://t.me/+uuLR9YwyRjg0ODQ0'>Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs</a> \n\n" \
+                        f"🎗️ʝσιи 🎗️ ѕнαяє🎗️ ѕυρρσят🎗️ </b>"
+
+        f_caption = f_caption + f"\n\n{f_sub_caption}"
+
+        await bot.send_cached_media(
+            chat_id=query.from_user.id,
+            file_id=file_id,
+            caption=f_caption,
+            protect_content=settings["file_secure"] if settings["file_secure"] else False,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            '🎭 Nᴇᴡ Uᴘᴅᴀᴛᴇs', url="https://t.me/UFSFilmUpdate"
+                        ),
+                        InlineKeyboardButton(
+                            '🎭 ᴍᴏᴠɪᴇs', url="https://t.me/UniversalFilmStudio"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "⚜ Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs ⚜", url="https://t.me/+uuLR9YwyRjg0ODQ0"
+                        )
+                    ]
+                ]
+            )
+        )
+
+    await query.answer('Check My PM, I Have Sent Selected Files In Your PM', show_alert=True)
+    if SELECT[int(req)]:
+        del SELECT[int(req)]
+
+    if FILES[int(req)]:
+        del FILES[int(req)]
+
+    SELECT[int(req)] = "DE-ACTIVE"
+    await auto_filter(bot, query.message.reply_to_message, cb=query)
+
+
 @Client.on_callback_query(filters.regex(r"^next"))
 async def next_page(bot, query):
     global SINGLE_BUTTON
@@ -185,7 +382,8 @@ async def next_page(bot, query):
         pass
     elif int(req) not in [query.from_user.id, 0]:
         return await query.answer(
-            "കാര്യമൊക്കെ കൊള്ളാം, പക്ഷേ, ഇത്‌ നിങ്ങളുടേതല്ല.;\nNice Try! But, This Was Not Your Request, Request Yourself;",
+            "കാര്യമൊക്കെ കൊള്ളാം, പക്ഷേ, ഇത്‌ നിങ്ങളുടേതല്ല.;\n"
+            "Nice Try! But, This Was Not Your Request, Request Yourself;",
             show_alert=True)
     try:
         offset = int(offset)
@@ -211,23 +409,25 @@ async def next_page(bot, query):
         SPELL_CHECK_REPLY = settings["spell_check"]
         IMDB = settings["imdb"]
 
-    if SINGLE_BUTTON:
+    if SINGLE_BUTTON:       # text=f"[{get_size(file.file_size)}] - 🎬 {file.file_name}",
         btn = [
             [
                 InlineKeyboardButton(
-                    text=f"[{get_size(file.file_size)}] - 🎬 {file.file_name}", callback_data=f'files#{file.file_id}'
+                    text='Selected ✅' if file.file_id in FILES[int(req)] else f"[{get_size(file.file_size)}] - 🎬 {file.file_name}",
+                    callback_data=f'files#{file.file_id}'
                 ),
             ]
             for file in files
         ]
-    else:
+    else:           # text=f"{file.file_name}", text=f"{get_size(file.file_size)}",
         btn = [
             [
                 InlineKeyboardButton(
-                    text=f"{file.file_name}", callback_data=f'files#{file.file_id}'
+                    text='Selected ✅' if file.file_id in FILES[int(req)] else f"{file.file_name}",
+                    callback_data=f'files#{file.file_id}'
                 ),
                 InlineKeyboardButton(
-                    text=f"{get_size(file.file_size)}",
+                    text='Selected ✅' if file.file_id in FILES[int(req)] else f"{get_size(file.file_size)}",
                     callback_data=f'files_#{file.file_id}',
                 ),
             ]
@@ -259,6 +459,16 @@ async def next_page(bot, query):
             ],
         )
 
+    if SELECT[int(req)] == "ACTIVE":
+        btn.append(
+            [InlineKeyboardButton(text=f"De-Select", callback_data=f"deselect_{req}_{key}_{offset}"),
+             InlineKeyboardButton(text="Send", callback_data=f"send_{req}_{key}_{offset}")]
+        )
+    else:
+        btn.append(
+            [InlineKeyboardButton(text="Select", callback_data=f"select_{req}_{key}_{offset}")]
+        )
+
     btn.insert(0, [
         InlineKeyboardButton("⭕️ Nᴇᴡ Uᴘᴅᴀᴛᴇs ⭕️", url="https://t.me/UFSFilmUpdate")
     ])
@@ -283,8 +493,9 @@ async def advantage_spoll_choker(bot, query):
     if int(ad_user) in ADMINS:
         pass
     elif int(user) != 0 and query.from_user.id != int(user):
-        return await query.answer("കാര്യമൊക്കെ കൊള്ളാം, പക്ഷേ, ഇത്‌ നിങ്ങളുടേതല്ല.;\nNice Try! But, This Was Not Your Request, Request Yourself;",
-                                  show_alert=True)
+        return await query.answer(
+            "കാര്യമൊക്കെ കൊള്ളാം, പക്ഷേ, ഇത്‌ നിങ്ങളുടേതല്ല.;\nNice Try! But, This Was Not Your Request, Request Yourself;",
+            show_alert=True)
     if movie_ == "close_spellcheck":
         return await query.message.delete()
     movies = SPELL_CHECK.get(query.message.reply_to_message.id)
@@ -515,7 +726,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
             pass
         elif int(user) != 0 and query.from_user.id != int(user):
             return await query.answer(
-                "കാര്യമൊക്കെ കൊള്ളാം, പക്ഷേ, ഇത്‌ നിങ്ങളുടേതല്ല.;\nNice Try! But, This Was Not Your Request, Request Yourself;",
+                "കാര്യമൊക്കെ കൊള്ളാം, പക്ഷേ, ഇത്‌ നിങ്ങളുടേതല്ല.;\n"
+                "Nice Try! But, This Was Not Your Request, Request Yourself;",
                 show_alert=True)
 
         if not files_:
@@ -534,44 +746,104 @@ async def cb_handler(client: Client, query: CallbackQuery):
             f_caption = f"{files.file_name}"
 
         f_sub_caption = f"<code>💾 Size: {size}</code>\n\n🌟༺ ──•◈•─ ─•◈•──༻🌟\n<b>➧ പുതിയ സിനിമകൾ / വെബ്‌ സീരീസ് " \
-                    f"വേണോ? എന്നാൽ പെട്ടെന്ന് ഗ്രൂപ്പിൽ ജോയിൻ ആയിക്കോ\n\n🔊 Gʀᴏᴜᴘ: " \
-                    f"@UniversalFilmStudio \n🔊 Gʀᴏᴜᴘ: @UniversalFilmStudioo \n🔊 " \
-                    f"Cʜᴀɴɴᴇʟ: <a href='https://t.me/+uuLR9YwyRjg0ODQ0'>Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs</a> \n\n🎗️ʝσιи 🎗️ ѕнαяє🎗️ ѕυρρσят🎗️ </b>"
+                        f"വേണോ? എന്നാൽ പെട്ടെന്ന് ഗ്രൂപ്പിൽ ജോയിൻ ആയിക്കോ\n\n🔊 Gʀᴏᴜᴘ: " \
+                        f"@UniversalFilmStudio \n🔊 Gʀᴏᴜᴘ: @UniversalFilmStudioo \n🔊 " \
+                        f"Cʜᴀɴɴᴇʟ: <a href='https://t.me/+uuLR9YwyRjg0ODQ0'>Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs</a> \n\n" \
+                        f"🎗️ʝσιи 🎗️ ѕнαяє🎗️ ѕυρρσят🎗️ </b>"
 
         f_caption = f_caption + f"\n\n{f_sub_caption}"
 
         try:
-            if AUTH_CHANNEL and not await is_subscribed(client, query):
-                await query.answer(url=f"https://t.me/{temp.U_NAME}?start={file_id}")
-                return
-            elif P_TTI_SHOW_OFF:     # P_TTI_SHOW_OFF
-                await query.answer(url=f"https://t.me/{temp.U_NAME}?start={file_id}")
-                return
-            else:
-                await client.send_cached_media(
-                    chat_id=query.from_user.id,
-                    file_id=file_id,
-                    caption=f_caption,
-                    protect_content=settings["file_secure"] if settings["file_secure"] else False,
-                    reply_markup=InlineKeyboardMarkup(
-                        [
+            if SELECT.get(int(user)) != 'ACTIVE':
+                if AUTH_CHANNEL and not await is_subscribed(client, query):
+                    await query.answer(url=f"https://t.me/{temp.U_NAME}?start={file_id}")
+                    return
+                elif P_TTI_SHOW_OFF:  # P_TTI_SHOW_OFF
+                    await query.answer(url=f"https://t.me/{temp.U_NAME}?start={file_id}")
+                    return
+                else:
+                    await client.send_cached_media(
+                        chat_id=query.from_user.id,
+                        file_id=file_id,
+                        caption=f_caption,
+                        protect_content=settings["file_secure"] if settings["file_secure"] else False,
+                        reply_markup=InlineKeyboardMarkup(
                             [
-                                InlineKeyboardButton(
-                                    '🎭 Nᴇᴡ Uᴘᴅᴀᴛᴇs', url="https://t.me/UFSFilmUpdate"
-                                ),
-                                InlineKeyboardButton(
-                                    '🎭 ᴍᴏᴠɪᴇs', url="https://t.me/UniversalFilmStudio"
-                                )
-                            ],
-                            [
-                                InlineKeyboardButton(
-                                    "⚜ Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs ⚜", url="https://t.me/+uuLR9YwyRjg0ODQ0"
-                                )
+                                [
+                                    InlineKeyboardButton(
+                                        '🎭 Nᴇᴡ Uᴘᴅᴀᴛᴇs', url="https://t.me/UFSFilmUpdate"
+                                    ),
+                                    InlineKeyboardButton(
+                                        '🎭 ᴍᴏᴠɪᴇs', url="https://t.me/UniversalFilmStudio"
+                                    )
+                                ],
+                                [
+                                    InlineKeyboardButton(
+                                        "⚜ Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs ⚜", url="https://t.me/+uuLR9YwyRjg0ODQ0"
+                                    )
+                                ]
                             ]
-                        ]
+                        )
                     )
-                )
-                await query.answer('Check My PM, I Have Sent Files In Your PM', show_alert=True)
+                    await query.answer('Check My PM, I Have Sent Files In Your PM', show_alert=True)
+            else:
+                if query.from_user.id in FILES:
+                    # append the new number to the existing array at this slot
+                    FILES[int(user)].append(file_id)
+                else:
+                    # create a new array in this slot
+                    FILES[int(user)] = [file_id]
+
+                i = 3
+                lines = []
+                sublines = []
+                btn = []
+                btn1 = []
+                try:
+                    while True:
+                        j = 0
+                        lines = query.message.reply_markup.inline_keyboard[i]
+                        if len(lines) == 1:
+                            fs = json.loads(str(lines[0]))
+                            if file_id == str(fs['callback_data']).split("#", 1)[1]:
+                                btn.append([InlineKeyboardButton(text='Selected ✅', callback_data=fs['callback_data'])])
+                            else:
+                                btn.append([InlineKeyboardButton(text=fs['text'], callback_data=fs['callback_data'])])
+                        else:
+                            while True:
+                                sublines = lines[j]
+                                fs1 = json.loads(str(sublines))
+                                btn1.append([fs1['text'], fs1['callback_data'], True])
+
+                                j = j + 1
+                                sublines = []
+                                if j > len(lines) - 1:
+                                    keyboard = build_keyboard(btn1)
+                                    btn.insert(i, keyboard[0])
+                                    btn1 = []
+                                    break
+                        i = i + 1
+                        lines = []
+                        if i > len(query.message.reply_markup.inline_keyboard) - 1:
+                            break
+
+                except Exception as e:
+                    print(str(e))
+
+                btn.insert(0, [
+                    InlineKeyboardButton("🧲 Tᴏʀʀᴇɴᴛ Gʀᴏᴜᴘ", url="https://t.me/UFSLeechPublic")
+                ])
+                btn.insert(0, [
+                    InlineKeyboardButton("ᴘᴍ ᴍᴇ", url="https://t.me/UFSChatBot"),
+                    InlineKeyboardButton("⚜ Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs ⚜", url="https://t.me/+uuLR9YwyRjg0ODQ0")
+                ])
+
+                btn.insert(0, [
+                    InlineKeyboardButton("🔄 Nᴇᴡ Uᴘᴅᴀᴛᴇs", url="https://t.me/UFSFilmUpdate")
+                ])
+
+                await query.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(btn))
+
         except UserIsBlocked:
             await query.answer('Unblock Me Dude!', show_alert=True)
         except PeerIdInvalid:
@@ -665,7 +937,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     await sts.edit("FAILED")
                     return await client.send_message(LOG_CHANNEL, f"{str(err)}")
                 await asyncio.sleep(0.5)
-            return await query.message.reply(f"<b><a href='https://t.me/UniversalFilmStudio'>Thank For Using Me...</a></b>")
+            return await query.message.reply(
+                f"<b><a href='https://t.me/UniversalFilmStudio'>Thank For Using Me...</a></b>")
 
         files_ = await get_file_details(file_id)
         if not files_:
@@ -1164,7 +1437,7 @@ async def check_manual_filter(client, group_id, keyword, message, msg):
             logger.exception(e)
 
 
-async def auto_filter(client, msg, spoll=False):
+async def auto_filter(client, msg, spoll=False, cb=None):
     if not spoll:
         message = msg
         settings = await sett_db.get_settings(str(message.chat.id))
@@ -1242,7 +1515,7 @@ async def auto_filter(client, msg, spoll=False):
                 ),
                 InlineKeyboardButton(
                     text=f"{get_size(file.file_size)}",
-                    callback_data=f'files_#{file.file_id}',
+                    callback_data=f'files#{file.file_id}',
                 ),
             ]
             for file in files
@@ -1268,6 +1541,10 @@ async def auto_filter(client, msg, spoll=False):
             [InlineKeyboardButton(text="🗓 1/1", callback_data="pages")]
         )
 
+    btn.append(
+        [InlineKeyboardButton(text="Select", callback_data=f"select_{req}_{key}_{offset}")]
+    )
+
     btn.insert(0, [
         InlineKeyboardButton("🧲 Tᴏʀʀᴇɴᴛ Gʀᴏᴜᴘ", url="https://t.me/UFSLeechPublic")
     ])
@@ -1279,6 +1556,12 @@ async def auto_filter(client, msg, spoll=False):
     btn.insert(0, [
         InlineKeyboardButton("🔄 Nᴇᴡ Uᴘᴅᴀᴛᴇs", url="https://t.me/UFSFilmUpdate")
     ])
+
+    if SELECT.get(int(req)) == 'DE-ACTIVE':
+        await cb.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(btn))
+        if SELECT[int(req)]:
+            del SELECT[int(req)]
+        return
 
     imdb = await get_poster(search, file=(files[0]).file_name) if IMDB else None
     query_by = f"<b>ɴᴏ ᴏғ ғɪʟᴇs :</b> <code><b><i>{total_results}</i></b></code>\n" \
