@@ -1543,7 +1543,7 @@ async def auto_filter(client, msg, spoll=False, cb=None):
             )
 
         btn.append(
-            [InlineKeyboardButton(text="Select", callback_data=f"select_{req}_{key}_{offset}")]
+            [InlineKeyboardButton(text="Select", callback_data=f"select_{message.from_user.id}_{message.chat.id}-{message.id}_{offset}")]
         )
 
         btn.insert(0, [
@@ -1558,10 +1558,10 @@ async def auto_filter(client, msg, spoll=False, cb=None):
             InlineKeyboardButton("🔄 Nᴇᴡ Uᴘᴅᴀᴛᴇs", url="https://t.me/UFSFilmUpdate")
         ])
 
-        if SELECT.get(int(req)) == 'DE-ACTIVE':
+        if SELECT.get(int(message.from_user.id)) == 'DE-ACTIVE':
             await cb.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(btn))
-            if SELECT[int(req)]:
-                del SELECT[int(req)]
+            if SELECT[int(message.from_user.id)]:
+                del SELECT[int(message.from_user.id)]
             return
 
         imdb = await get_poster(search, file=(files[0]).file_name) if IMDB else None
