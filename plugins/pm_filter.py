@@ -1538,6 +1538,8 @@ async def auto_filter(client, msg, spoll=False, cb=None):
                  InlineKeyboardButton(text="NEXT ⏩", callback_data=f"next_{req}_{key}_{offset}")]
             )
         else:
+            key = f"{message.chat.id}-{message.id}"
+            BUTTONS[key] = search
             btn.append(
                 [InlineKeyboardButton(text="🗓 1/1", callback_data="pages")]
             )
