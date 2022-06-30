@@ -1438,223 +1438,226 @@ async def check_manual_filter(client, group_id, keyword, message, msg):
 
 
 async def auto_filter(client, msg, spoll=False, cb=None):
-    if not spoll:
-        message = msg
-        settings = await sett_db.get_settings(str(message.chat.id))
-        if settings is not None:
-            SINGLE_BUTTON = settings["button"]
-            SPELL_CHECK_REPLY = settings["spell_check"]
-            IMDB = settings["imdb"]
-            AUTO_DELETE = settings["auto_delete"]
-            DELETE_TIME = settings["delete_time"]
-        if re.findall("((^\/|^,|^!|^\.|^[\U0001F600-\U000E007F]).*)", message.text):
-            return
-
-        if 0 < len(message.text) < 100:
-            search = message.text
-            files, offset, total_results = await get_search_results(search.lower(), offset=0, filter=True)
-            if not files:
-                if SPELL_CHECK_REPLY:
-                    return await advantage_spell_chok(client, msg)
-                else:
-                    Send_message = await client.send_video(
-                        chat_id=msg.chat.id,
-                        video="https://telegra.ph/file/3e9f7db0c98e6b236c2c7.mp4",
-                        caption=f"Couldn't Find This Movie.Please Try Again Or Search On Our "
-                                f"<b><a href='https://t.me/+uuLR9YwyRjg0ODQ0'>Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs</a></b>. \n\n"
-                                f"ഈ സിനിമയുടെ ഒറിജിനൽ പേര് ഗൂഗിളിൽ പോയി കണ്ടെത്തി അതുപോലെ ഇവിടെ കൊടുക്കുക 🥺",
-                        reply_to_message_id=msg.id
-                    )
-                    await asyncio.sleep(15)  # in seconds
-                    await Send_message.delete()
-                    return
-        else:
-            return
-    else:
-        message = msg.message.reply_to_message  # msg will be callback query
-        settings = await sett_db.get_settings(str(message.chat.id))
-        if settings is not None:
-            SINGLE_BUTTON = settings["button"]
-            SPELL_CHECK_REPLY = settings["spell_check"]
-            IMDB = settings["imdb"]
-            AUTO_DELETE = settings["auto_delete"]
-            DELETE_TIME = settings["delete_time"]
-
-        search, files, offset, total_results = spoll
-        keywords = await get_filters(msg.message.chat.id)
-        for keyword in reversed(sorted(keywords, key=len)):
-            pattern = r"( |^|[^\w])" + re.escape(keyword) + r"( |$|[^\w])"
-            if re.search(pattern, search, flags=re.IGNORECASE):
-                await check_manual_filter(client, message.chat.id, keyword, message, msg.message.id)
-                # await msg.message.delete()
+    try:
+        if not spoll:
+            message = msg
+            settings = await sett_db.get_settings(str(message.chat.id))
+            if settings is not None:
+                SINGLE_BUTTON = settings["button"]
+                SPELL_CHECK_REPLY = settings["spell_check"]
+                IMDB = settings["imdb"]
+                AUTO_DELETE = settings["auto_delete"]
+                DELETE_TIME = settings["delete_time"]
+            if re.findall("((^\/|^,|^!|^\.|^[\U0001F600-\U000E007F]).*)", message.text):
                 return
 
-    if SINGLE_BUTTON:
-        btn = [
-            [
-                InlineKeyboardButton(
-                    text=f"[{get_size(file.file_size)}] - 🎬 {file.file_name}", callback_data=f'files#{file.file_id}'
-                ),
-            ]
-            for file in files
-        ]
-
-        for file in files:
-            if any(x.lower() in str(file.file_name).lower() for x in ["PreDVD", "CAM", "Scr"]):
-                Quality = "List Contains PreDVDRip/ScrRip"
-                break
+            if 0 < len(message.text) < 100:
+                search = message.text
+                files, offset, total_results = await get_search_results(search.lower(), offset=0, filter=True)
+                if not files:
+                    if SPELL_CHECK_REPLY:
+                        return await advantage_spell_chok(client, msg)
+                    else:
+                        Send_message = await client.send_video(
+                            chat_id=msg.chat.id,
+                            video="https://telegra.ph/file/3e9f7db0c98e6b236c2c7.mp4",
+                            caption=f"Couldn't Find This Movie.Please Try Again Or Search On Our "
+                                    f"<b><a href='https://t.me/+uuLR9YwyRjg0ODQ0'>Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs</a></b>. \n\n"
+                                    f"ഈ സിനിമയുടെ ഒറിജിനൽ പേര് ഗൂഗിളിൽ പോയി കണ്ടെത്തി അതുപോലെ ഇവിടെ കൊടുക്കുക 🥺",
+                            reply_to_message_id=msg.id
+                        )
+                        await asyncio.sleep(15)  # in seconds
+                        await Send_message.delete()
+                        return
             else:
-                Quality = "HDRip/WebRip"
+                return
+        else:
+            message = msg.message.reply_to_message  # msg will be callback query
+            settings = await sett_db.get_settings(str(message.chat.id))
+            if settings is not None:
+                SINGLE_BUTTON = settings["button"]
+                SPELL_CHECK_REPLY = settings["spell_check"]
+                IMDB = settings["imdb"]
+                AUTO_DELETE = settings["auto_delete"]
+                DELETE_TIME = settings["delete_time"]
 
-    else:
-        btn = [
-            [
-                InlineKeyboardButton(
-                    text=f"{file.file_name}",
-                    callback_data=f'files#{file.file_id}',
-                ),
-                InlineKeyboardButton(
-                    text=f"{get_size(file.file_size)}",
-                    callback_data=f'files#{file.file_id}',
-                ),
+            search, files, offset, total_results = spoll
+            keywords = await get_filters(msg.message.chat.id)
+            for keyword in reversed(sorted(keywords, key=len)):
+                pattern = r"( |^|[^\w])" + re.escape(keyword) + r"( |$|[^\w])"
+                if re.search(pattern, search, flags=re.IGNORECASE):
+                    await check_manual_filter(client, message.chat.id, keyword, message, msg.message.id)
+                    # await msg.message.delete()
+                    return
+
+        if SINGLE_BUTTON:
+            btn = [
+                [
+                    InlineKeyboardButton(
+                        text=f"[{get_size(file.file_size)}] - 🎬 {file.file_name}", callback_data=f'files#{file.file_id}'
+                    ),
+                ]
+                for file in files
             ]
-            for file in files
-        ]
 
-        for file in files:
-            if any(x.lower() in str(file.file_name).lower() for x in ["PreDVD", "CAM", "Scr"]):
-                Quality = "List Contains PreDVDRip/ScrRip"
-                break
-            else:
-                Quality = "HDRip/WebRip"
+            for file in files:
+                if any(x.lower() in str(file.file_name).lower() for x in ["PreDVD", "CAM", "Scr"]):
+                    Quality = "List Contains PreDVDRip/ScrRip"
+                    break
+                else:
+                    Quality = "HDRip/WebRip"
 
-    if offset != "":
-        key = f"{message.chat.id}-{message.id}"
-        BUTTONS[key] = search
-        req = message.from_user.id if message.from_user else 0
+        else:
+            btn = [
+                [
+                    InlineKeyboardButton(
+                        text=f"{file.file_name}",
+                        callback_data=f'files#{file.file_id}',
+                    ),
+                    InlineKeyboardButton(
+                        text=f"{get_size(file.file_size)}",
+                        callback_data=f'files#{file.file_id}',
+                    ),
+                ]
+                for file in files
+            ]
+
+            for file in files:
+                if any(x.lower() in str(file.file_name).lower() for x in ["PreDVD", "CAM", "Scr"]):
+                    Quality = "List Contains PreDVDRip/ScrRip"
+                    break
+                else:
+                    Quality = "HDRip/WebRip"
+
+        if offset != "":
+            key = f"{message.chat.id}-{message.id}"
+            BUTTONS[key] = search
+            req = message.from_user.id if message.from_user else 0
+            btn.append(
+                [InlineKeyboardButton(text=f"🗓 1/{round(int(total_results) / 10)}", callback_data="pages"),
+                 InlineKeyboardButton(text="NEXT ⏩", callback_data=f"next_{req}_{key}_{offset}")]
+            )
+        else:
+            btn.append(
+                [InlineKeyboardButton(text="🗓 1/1", callback_data="pages")]
+            )
+
         btn.append(
-            [InlineKeyboardButton(text=f"🗓 1/{round(int(total_results) / 10)}", callback_data="pages"),
-             InlineKeyboardButton(text="NEXT ⏩", callback_data=f"next_{req}_{key}_{offset}")]
-        )
-    else:
-        btn.append(
-            [InlineKeyboardButton(text="🗓 1/1", callback_data="pages")]
+            [InlineKeyboardButton(text="Select", callback_data=f"select_{req}_{key}_{offset}")]
         )
 
-    btn.append(
-        [InlineKeyboardButton(text="Select", callback_data=f"select_{req}_{key}_{offset}")]
-    )
+        btn.insert(0, [
+            InlineKeyboardButton("🧲 Tᴏʀʀᴇɴᴛ Gʀᴏᴜᴘ", url="https://t.me/UFSLeechPublic")
+        ])
+        btn.insert(0, [
+            InlineKeyboardButton("ᴘᴍ ᴍᴇ", url="https://t.me/UFSChatBot"),
+            InlineKeyboardButton("⚜ Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs ⚜", url="https://t.me/+uuLR9YwyRjg0ODQ0")
+        ])
 
-    btn.insert(0, [
-        InlineKeyboardButton("🧲 Tᴏʀʀᴇɴᴛ Gʀᴏᴜᴘ", url="https://t.me/UFSLeechPublic")
-    ])
-    btn.insert(0, [
-        InlineKeyboardButton("ᴘᴍ ᴍᴇ", url="https://t.me/UFSChatBot"),
-        InlineKeyboardButton("⚜ Nᴇᴡ Oᴛᴛ Mᴏᴠɪᴇs ⚜", url="https://t.me/+uuLR9YwyRjg0ODQ0")
-    ])
+        btn.insert(0, [
+            InlineKeyboardButton("🔄 Nᴇᴡ Uᴘᴅᴀᴛᴇs", url="https://t.me/UFSFilmUpdate")
+        ])
 
-    btn.insert(0, [
-        InlineKeyboardButton("🔄 Nᴇᴡ Uᴘᴅᴀᴛᴇs", url="https://t.me/UFSFilmUpdate")
-    ])
+        if SELECT.get(int(req)) == 'DE-ACTIVE':
+            await cb.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(btn))
+            if SELECT[int(req)]:
+                del SELECT[int(req)]
+            return
 
-    if SELECT.get(int(req)) == 'DE-ACTIVE':
-        await cb.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(btn))
-        if SELECT[int(req)]:
-            del SELECT[int(req)]
-        return
+        imdb = await get_poster(search, file=(files[0]).file_name) if IMDB else None
+        query_by = f"<b>ɴᴏ ᴏғ ғɪʟᴇs :</b> <code><b><i>{total_results}</i></b></code>\n" \
+                   f"<b>ʏᴏᴜʀ ϙᴜᴇʀʏ :</b> <code><b><i>{search}</i></b></code>\n" \
+                   f"<b>Qᴜᴀʟɪᴛʏ :</b> <code><b><i>{Quality}</i></b></code>\n" \
+                   f"<b>ʀᴇϙᴜᴇsᴛᴇᴅ ʙʏ :</b> <b><spoiler>{msg.from_user.first_name}</spoiler></b>"
+        if AUTO_DELETE:
+            query_by = query_by + f"\n\n<b><u>Aᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ Dᴇʟᴇᴛᴇ Tʜɪs Rᴇϙᴜᴇsᴛ Aғᴛᴇʀ {TimeFormatter(int(DELETE_TIME) * 1000)}</u></b>"
 
-    imdb = await get_poster(search, file=(files[0]).file_name) if IMDB else None
-    query_by = f"<b>ɴᴏ ᴏғ ғɪʟᴇs :</b> <code><b><i>{total_results}</i></b></code>\n" \
-               f"<b>ʏᴏᴜʀ ϙᴜᴇʀʏ :</b> <code><b><i>{search}</i></b></code>\n" \
-               f"<b>Qᴜᴀʟɪᴛʏ :</b> <code><b><i>{Quality}</i></b></code>\n" \
-               f"<b>ʀᴇϙᴜᴇsᴛᴇᴅ ʙʏ :</b> <b><spoiler>{msg.from_user.first_name}</spoiler></b>"
-    if AUTO_DELETE:
-        query_by = query_by + f"\n\n<b><u>Aᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ Dᴇʟᴇᴛᴇ Tʜɪs Rᴇϙᴜᴇsᴛ Aғᴛᴇʀ {TimeFormatter(int(DELETE_TIME) * 1000)}</u></b>"
+        if imdb:
+            cap = IMDB_TEMPLATE.format(
+                query=query_by,
+                title=imdb['title'],
+                votes=imdb['votes'],
+                aka=imdb["aka"],
+                seasons=imdb["seasons"],
+                box_office=imdb['box_office'],
+                localized_title=imdb['localized_title'],
+                kind=imdb['kind'],
+                imdb_id=imdb["imdb_id"],
+                cast=imdb["cast"],
+                runtime=imdb["runtime"],
+                countries=imdb["countries"],
+                certificates=imdb["certificates"],
+                languages=imdb["languages"],
+                director=imdb["director"],
+                writer=imdb["writer"],
+                producer=imdb["producer"],
+                composer=imdb["composer"],
+                cinematographer=imdb["cinematographer"],
+                music_team=imdb["music_team"],
+                distributors=imdb["distributors"],
+                release_date=imdb['release_date'],
+                year=imdb['year'],
+                genres=imdb['genres'],
+                poster=imdb['poster'],
+                plot=imdb['plot'],
+                rating=imdb['rating'],
+                url=imdb['url'],
+                chat=message.chat.title,
+                **locals()
+            )
+        else:
+            cap = query_by  # f"Here Is What I Found For Your Query {search}"
 
-    if imdb:
-        cap = IMDB_TEMPLATE.format(
-            query=query_by,
-            title=imdb['title'],
-            votes=imdb['votes'],
-            aka=imdb["aka"],
-            seasons=imdb["seasons"],
-            box_office=imdb['box_office'],
-            localized_title=imdb['localized_title'],
-            kind=imdb['kind'],
-            imdb_id=imdb["imdb_id"],
-            cast=imdb["cast"],
-            runtime=imdb["runtime"],
-            countries=imdb["countries"],
-            certificates=imdb["certificates"],
-            languages=imdb["languages"],
-            director=imdb["director"],
-            writer=imdb["writer"],
-            producer=imdb["producer"],
-            composer=imdb["composer"],
-            cinematographer=imdb["cinematographer"],
-            music_team=imdb["music_team"],
-            distributors=imdb["distributors"],
-            release_date=imdb['release_date'],
-            year=imdb['year'],
-            genres=imdb['genres'],
-            poster=imdb['poster'],
-            plot=imdb['plot'],
-            rating=imdb['rating'],
-            url=imdb['url'],
-            chat=message.chat.title,
-            **locals()
-        )
-    else:
-        cap = query_by  # f"Here Is What I Found For Your Query {search}"
+        if imdb and imdb.get('poster'):
+            try:
+                d_msg = await message.reply_photo(photo=imdb.get('poster'), caption=cap,
+                                                  reply_markup=InlineKeyboardMarkup(btn))
 
-    if imdb and imdb.get('poster'):
-        try:
-            d_msg = await message.reply_photo(photo=imdb.get('poster'), caption=cap,
-                                              reply_markup=InlineKeyboardMarkup(btn))
+                # if AUTO_DELETE:
+                #     await asyncio.sleep(int(DELETE_TIME))
+                #     await message.delete()
+                #     await d_msg.delete()
+            except (MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty):
+                pic = imdb.get('poster')
+                poster = pic.replace('.jpg', "._V1_UX360.jpg")
+                d_msg = await message.reply_photo(photo=poster, caption=cap, reply_markup=InlineKeyboardMarkup(btn))
 
-            # if AUTO_DELETE:
-            #     await asyncio.sleep(int(DELETE_TIME))
-            #     await message.delete()
-            #     await d_msg.delete()
-        except (MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty):
-            pic = imdb.get('poster')
-            poster = pic.replace('.jpg', "._V1_UX360.jpg")
-            d_msg = await message.reply_photo(photo=poster, caption=cap, reply_markup=InlineKeyboardMarkup(btn))
+                # if AUTO_DELETE:
+                #     await asyncio.sleep(int(DELETE_TIME))
+                #     await message.delete()
+                #     await d_msg.delete()
+            except Exception as e:
+                logger.exception(e)
+                # await message.reply_text(cap, reply_markup=InlineKeyboardMarkup(btn))
+                d_msg = await client.send_photo(
+                    chat_id=msg.chat.id,
+                    photo=random.choice(PICS),
+                    caption=cap,
+                    reply_markup=InlineKeyboardMarkup(btn),
+                    parse_mode="html",
+                    reply_to_message_id=msg.id)
 
-            # if AUTO_DELETE:
-            #     await asyncio.sleep(int(DELETE_TIME))
-            #     await message.delete()
-            #     await d_msg.delete()
-        except Exception as e:
-            logger.exception(e)
+                # if AUTO_DELETE:
+                #     await asyncio.sleep(int(DELETE_TIME))
+                #     await message.delete()
+                #     await d_msg.delete()
+        else:
             # await message.reply_text(cap, reply_markup=InlineKeyboardMarkup(btn))
             d_msg = await client.send_photo(
                 chat_id=msg.chat.id,
                 photo=random.choice(PICS),
                 caption=cap,
                 reply_markup=InlineKeyboardMarkup(btn),
-                parse_mode="html",
                 reply_to_message_id=msg.id)
+        if spoll:
+            await msg.message.delete()
 
-            # if AUTO_DELETE:
-            #     await asyncio.sleep(int(DELETE_TIME))
-            #     await message.delete()
-            #     await d_msg.delete()
-    else:
-        # await message.reply_text(cap, reply_markup=InlineKeyboardMarkup(btn))
-        d_msg = await client.send_photo(
-            chat_id=msg.chat.id,
-            photo=random.choice(PICS),
-            caption=cap,
-            reply_markup=InlineKeyboardMarkup(btn),
-            reply_to_message_id=msg.id)
-    if spoll:
-        await msg.message.delete()
-
-    if AUTO_DELETE:
-        await asyncio.sleep(int(DELETE_TIME))
-        await message.delete()
-        await d_msg.delete()
+        if AUTO_DELETE:
+            await asyncio.sleep(int(DELETE_TIME))
+            await message.delete()
+            await d_msg.delete()
+    except Exception as e:
+        print(str(e))
 
 
 async def advantage_spell_chok(client, msg):
