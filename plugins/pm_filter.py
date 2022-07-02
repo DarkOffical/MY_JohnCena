@@ -1768,9 +1768,9 @@ async def advantage_spell_chok(client, msg):
                             f"**എന്താണ്‌ മാഷേ, അയക്കും മുമ്പ്‌ കറക്റ്റ്‌ ആണോ ന്ന് ഒന്ന് ചെക്ക്‌ ചെയ്യ്‌.**\n\n"
                             f"Did You Mean Any One Of These 👇🏻?",
                             reply_markup=InlineKeyboardMarkup(btn))
-    # await asyncio.sleep(10)
-    # await d_msg.delete()
-    # await msg.delete()
+    await asyncio.sleep(300)
+    await d_msg.delete()
+    await msg.delete()
 
 
 def build_keyboard(buttons):
