@@ -110,13 +110,14 @@ async def addfilter(client, message):
 
     await add_filter(grp_id, text, reply_text, btn, fileid, alert)
 
-    filter = await message.reply_text(
-        f"Filter For  `{text}`  Added In  **Globally** By [{message.from_user.first_name}](tg://user?id={message.from_user.id})"
-        "\n\nNote:- If You Add Any Theater Print On Manual Filter, "
-        "Moderators Will Review And Delete The Filter",  # {title}
-        quote=True
-    )
-    await filter.copy(LOG_CHANNEL)
+    if str(userid) not in ADMINS:
+        filter = await message.reply_text(
+            f"Filter For  `{text}`  Added In  **Globally** By [{message.from_user.first_name}](tg://user?id={message.from_user.id})"
+            "**\n\nNote:-** If You Add Any \n**Theater Print Or\nRedirecting Any Type Of Channel Link Or\nChannel Link Button**"
+            " On Your Manual Filter, Moderators Will Review And Delete The Filter",  # {title}
+            quote=True
+        )
+        await filter.copy(LOG_CHANNEL)
 
 
 @Client.on_message(filters.command(['viewfilters', 'filters']) & filters.incoming)
