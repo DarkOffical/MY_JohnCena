@@ -43,7 +43,8 @@ AUTH_GROUPS = [int(ch) for ch in auth_grp.split()] if auth_grp else None
 
 # https://github.com/Mahesh0253/pyrogram/archive/inline.zip
 # MongoDB information
-DATABASE_URI = environ.get('DATABASE_URI', 'mongodb+srv://jmjsoft:jins2010@ufsadvfilterbot.xckub.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
+# mongodb+srv://jmjsoft:jins@2010@ufsadvfilterbot.xckub.mongodb.net/myFirstDatabase?retryWrites=true&w=majority
+DATABASE_URI = environ.get('DATABASE_URI', '')
 DATABASE_NAME = environ.get('DATABASE_NAME', 'Adv_Auto_Filter')
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'Adv_Auto_Filter')
 
