@@ -1,12 +1,12 @@
 if [ -z $UPSTREAM_REPO ]
 then
   echo "Cloning main Repository"
-  git clone https://github.com/ufscrazybotz/UFS_Auto_Filter_Botz /UFSBotz
+  git clone https://github.com/Azanpopz/kindi.git /kindi
 else
   echo "Cloning Custom Repo from $UPSTREAM_REPO "
-  git clone $UPSTREAM_REPO /UFSBotz
+  git clone $UPSTREAM_REPO /kindi
 fi
-cd /UFSBotz
+cd /kindi
 pip3 install -U -r requirements.txt
-echo "Starting Bot...."
-python3 main.py
+echo "Starting kindi...."
+python3 bot.py
