@@ -12,7 +12,7 @@ pyromod
 telegraph==1.4.1
 requests==2.25.1
 googletrans==3.1.0a0
-gTTS
+gTTS==2.2.4
 aiohttp==3.7.3
 pyperclip
 python-decouple
