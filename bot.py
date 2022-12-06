@@ -3,7 +3,7 @@ import asyncio
 import logging.config
 
 import pyromod.listen
-from pyrogram import Client, __version__, enums
+from pyrogram import Client, __version__
 from pyrogram.raw.all import layer
 
 
