@@ -12,7 +12,7 @@ from typing import Optional, Any
 
 from bot import Bot
 from Script import script
-from pyrogram import Client, filters, enums
+from pyrogram import Client, filters
 from pyrogram.raw.functions import messages as rmsg
 from database.batch_db import get_batch
 from pyrogram.errors.exceptions.bad_request_400 import ChatAdminRequired
